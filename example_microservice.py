@@ -1,14 +1,14 @@
 #!/usr/bin/python3
 
-import microservice
+import microservice as ms
 
 def serve_root(request):
     request.send_response(200)
     request.send_header('Content-type', 'text/html')
     request.end_headers()
-    request.wfile.write(bytes("<html><body><h1>Hello! I am your shiny microservice!</h1></body></html>", "utf8"))
+    request.send("<html><body><h1>Hello! I am your shiny microservice!</h1></body></html>")
 
-root = microservice.Route('/', serve_root, ['GET'])
-
-microservice.add_route(root)
-microservice.run()
+ms.set_host('0.0.0.0')
+ms.set_port(80)
+ms.add_route('/', serve_root)
+ms.run()

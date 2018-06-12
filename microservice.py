@@ -3,11 +3,19 @@ import http.server
 #module global routing table
 routes={}
 
-class Route:
-    def __init__(self, path, action, methods=["GET"]):
-        self.path=path
-        self.action=action
-        self.methods=methods
+#Useful 'constants' for caller
+GET=['GET']
+PUT=['PUT']
+POST=['POST']
+DELETE=['DELETE']
+
+#Default server settings
+HOST='localhost'
+PORT=8080
+
+class Action:
+    def __init__(self, action, methods):
+        self.action, self.methods=action, methods
 
 class Handler(http.server.BaseHTTPRequestHandler):
 
@@ -23,8 +31,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         print("in doDelete");
         self.serve("DELETE")
 
+    def send(self, content):
+        self.wfile.write(bytes(content, "utf8"))
+        
     def serve(self, method):
-        print("Request path:".format(self.path))
+        print("Request path:{}".format(self.path))
         try:
             global routes
             routing = routes[self.path]
@@ -42,25 +53,36 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.send_response(501)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(b"<html><body>")
-        self.wfile.write(b"<h2>501 Method not Supported</h2>")
+        self.send("<html><body>")
+        self.send("<h2>501 Method not Supported</h2>")
         message = "<p>Resource {} does not support method {}</p></body></html>".format(self.path, method)
-        self.wfile.write(bytes(message, "utf8"))
+        self.send(message)
         
     def not_found(self):             
         self.send_response(404)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
-        self.wfile.write(b"<html><body>")
-        self.wfile.write(b"<h2>404 Not Found</h2>")
+        self.send("<html><body>")
+        self.send("<h2>404 Not Found</h2>")
         message = "<p>Resource {} not found</p></body></html>".format(self.path)
-        self.wfile.write(bytes(message, "utf8"))
+        self.send(message)
 
-def add_route(route):
+def log(message):
+    print(message)
+
+def set_host(host):
+    global HOST
+    HOST=host
+
+def set_port(port):
+    global PORT
+    PORT=port
+        
+def add_route(path, action, methods=GET):
     global routes
-    routes[route.path]=route
+    routes[path]=Action(action, methods)
         
 def run():
-    httpd=http.server.HTTPServer(('',8000), Handler)
+    log("starting microserver at {} on port {}".format(HOST, PORT))
+    httpd=http.server.HTTPServer((HOST, PORT), Handler)
     httpd.serve_forever()
-    
