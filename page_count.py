@@ -17,6 +17,6 @@ def serve_count(request):
     request.end_headers()
     request.send(json.dumps({'count': COUNT}))
 
-ms.set_port(800)
+ms.set_port(8080)
 ms.add_route('/', serve_count)
 ms.run()
