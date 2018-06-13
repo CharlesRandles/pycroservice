@@ -1,5 +1,6 @@
 import http.server
-
+import threading
+from socketserver import ThreadingMixIn
 #module global routing table
 routes={}
 
@@ -20,27 +21,26 @@ class Action:
 class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
-        self.serve("GET")
+        self.serve()
     def do_PUT(self):
         print("in doPut");
-        self.serve("PUT")
+        self.serve()
     def do_POST(self):
         print("in doPost");
-        self.serve("POST")
+        self.serve()
     def do_DELETE(self):
         print("in doDelete");
-        self.serve("DELETE")
+        self.serve()
 
     def send(self, content):
         self.wfile.write(bytes(content, "utf8"))
         
-    def serve(self, method):
-        print("Request path:{}".format(self.path))
+    def serve(self):
         try:
             global routes
             routing = routes[self.path]
-            if method in routing.methods:
-                routing.action(self)
+            if self.command in routing.methods:
+               routing.action(self)
             else:
                 self.method_not_supported(method)
         except (KeyError):
@@ -49,13 +49,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
     ###################
     # Error responses #
     ###################
-    def method_not_supported(self, method):             
+    def method_not_supported(self):             
         self.send_response(501)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
         self.send("<html><body>")
         self.send("<h2>501 Method not Supported</h2>")
-        message = "<p>Resource {} does not support method {}</p></body></html>".format(self.path, method)
+        message = "<p>Resource {} does not support method {}</p></body></html>".format(self.path, self.command)
         self.send(message)
         
     def not_found(self):             
@@ -81,8 +81,12 @@ def set_port(port):
 def add_route(path, action, methods=GET):
     global routes
     routes[path]=Action(action, methods)
-        
+
+class ThreadedHTTPServer(ThreadingMixIn, http.server.HTTPServer):
+    #Passes requests to a new thread
+    pass
+    
 def run():
     log("starting microserver at {} on port {}".format(HOST, PORT))
-    httpd=http.server.HTTPServer((HOST, PORT), Handler)
+    httpd=ThreadedHTTPServer((HOST, PORT), Handler)
     httpd.serve_forever()
